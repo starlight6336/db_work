@@ -21,8 +21,8 @@ export default {
       logo: {
         src: logo,
         alt: '♥',
-        firstDes: '西安交通大学',
-        secondDes: '心理咨询系统'
+        firstDes: '新能源汽车销售',
+        secondDes: ''
       }
     }
   },
