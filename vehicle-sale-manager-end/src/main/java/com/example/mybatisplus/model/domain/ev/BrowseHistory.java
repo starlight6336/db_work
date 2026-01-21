@@ -7,31 +7,22 @@ import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("financial_plan")
-public class FinancialPlan {
+@TableName("browse_history")
+public class BrowseHistory {
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
+
+    @TableField("user_id")
+    private Long userId;
+
     @TableField("vehicle_id")
     private Long vehicleId;
-    private String name;
-    /**
-     * 首付比例 0.2 表示 20%
-     */
-    @TableField("down_payment_rate")
-    private BigDecimal downPaymentRate;
-    /**
-     * 分期期数（月）
-     */
-    private Integer months;
-    /**
-     * 年化利率
-     */
-    @TableField("annual_rate")
-    private BigDecimal annualRate;
+
+    @TableField("browse_time")
+    private LocalDateTime browseTime;
 
     @TableField("create_date")
     private LocalDateTime createDate;
@@ -43,3 +34,4 @@ public class FinancialPlan {
     @TableField("is_deleted")
     private Boolean deleted;
 }
+

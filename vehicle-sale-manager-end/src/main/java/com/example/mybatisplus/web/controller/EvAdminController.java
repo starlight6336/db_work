@@ -44,7 +44,11 @@ public class EvAdminController {
     }
 
     @PostMapping("/vehicles/{id}/restock")
-    public JsonResponse<Vehicle> restock(@PathVariable Long id, @RequestParam int delta) {
+    public JsonResponse<Vehicle> restock(@PathVariable Long id, @RequestBody Map<String, Integer> body) {
+        Integer delta = body == null ? null : body.get("delta");
+        if (delta == null) {
+            return JsonResponse.failure("缺少参数 delta");
+        }
         return JsonResponse.success(evSaleService.restockVehicle(id, delta), "补货完成");
     }
 
@@ -69,7 +73,12 @@ public class EvAdminController {
     }
 
     @PostMapping("/promotions/{id}/status")
-    public JsonResponse<Promotion> changePromotionStatus(@PathVariable Long id, @RequestParam PromotionStatus status) {
+    public JsonResponse<Promotion> changePromotionStatus(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        String statusStr = body == null ? null : body.get("status");
+        PromotionStatus status = statusStr == null ? null : PromotionStatus.valueOf(statusStr);
+        if (status == null) {
+            return JsonResponse.failure("缺少参数 status");
+        }
         return JsonResponse.success(evSaleService.updatePromotionStatus(id, status));
     }
 
@@ -91,8 +100,13 @@ public class EvAdminController {
 
     @PostMapping("/test-drives/{id}/audit")
     public JsonResponse<TestDriveRecord> auditTestDrive(@PathVariable Long id,
-                                                        @RequestParam TestDriveStatus status,
-                                                        @RequestParam(required = false) String note) {
+                                                        @RequestBody Map<String, String> body) {
+        String statusStr = body == null ? null : body.get("status");
+        String note = body == null ? null : body.get("note");
+        TestDriveStatus status = statusStr == null ? null : TestDriveStatus.valueOf(statusStr);
+        if (status == null) {
+            return JsonResponse.failure("缺少参数 status");
+        }
         return JsonResponse.success(evSaleService.reviewTestDrive(id, status, note), "审核完成");
     }
 

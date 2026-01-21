@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ev")
@@ -59,7 +60,11 @@ public class EvCustomerController {
     }
 
     @PostMapping("/orders/{id}/cancel")
-    public JsonResponse<OrderRecord> cancelOrder(@PathVariable Long id, @RequestParam Long userId) {
+    public JsonResponse<OrderRecord> cancelOrder(@PathVariable Long id, @RequestBody Map<String, Long> body) {
+        Long userId = body == null ? null : body.get("userId");
+        if (userId == null) {
+            return JsonResponse.failure("缺少参数 userId");
+        }
         return JsonResponse.success(evSaleService.cancelOrder(id, userId), "订单已取消");
     }
 
@@ -93,7 +98,12 @@ public class EvCustomerController {
     }
 
     @PostMapping("/inventory/subscribe")
-    public JsonResponse<String> subscribe(@RequestParam Long userId, @RequestParam Long vehicleId) {
+    public JsonResponse<String> subscribe(@RequestBody Map<String, Long> body) {
+        Long userId = body == null ? null : body.get("userId");
+        Long vehicleId = body == null ? null : body.get("vehicleId");
+        if (userId == null || vehicleId == null) {
+            return JsonResponse.failure("缺少参数 userId / vehicleId");
+        }
         evSaleService.subscribeInventory(userId, vehicleId);
         return JsonResponse.success("已订阅库存提醒");
     }
@@ -110,10 +120,6 @@ public class EvCustomerController {
 
     @GetMapping("/profile")
     public JsonResponse<UserProfile> profile(@RequestParam Long userId) {
-        UserProfile profile = evSaleService.listUsers().stream()
-                .filter(u -> u.getId().equals(userId))
-                .findFirst()
-                .orElse(null);
-        return JsonResponse.success(profile);
+        return JsonResponse.success(evSaleService.getUserProfile(userId));
     }
 }

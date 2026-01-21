@@ -1,190 +1,114 @@
 package com.example.mybatisplus.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.example.mybatisplus.mapper.ev.*;
 import com.example.mybatisplus.model.domain.ev.*;
 import com.example.mybatisplus.model.domain.ev.enums.OrderStatus;
 import com.example.mybatisplus.model.domain.ev.enums.PromotionStatus;
 import com.example.mybatisplus.model.domain.ev.enums.TestDriveStatus;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+/**
+ * 新能源汽车销售系统：数据库实现（MyBatis-Plus）
+ */
 @Service
 public class EvSaleService {
 
-    private final Map<Long, Vehicle> vehicles = new ConcurrentHashMap<>();
-    private final Map<Long, Promotion> promotions = new ConcurrentHashMap<>();
-    private final Map<Long, OrderRecord> orders = new ConcurrentHashMap<>();
-    private final Map<Long, ReviewRecord> reviews = new ConcurrentHashMap<>();
-    private final Map<Long, TestDriveRecord> testDrives = new ConcurrentHashMap<>();
-    private final Map<Long, UserProfile> users = new ConcurrentHashMap<>();
-    private final Map<Long, FinancialPlan> financialPlans = new ConcurrentHashMap<>();
-    private final Map<Long, List<Long>> inventorySubscriptions = new ConcurrentHashMap<>();
-    private final Map<Long, List<Long>> browseHistory = new ConcurrentHashMap<>();
+    private final VehicleMapper vehicleMapper;
+    private final PromotionMapper promotionMapper;
+    private final OrderRecordMapper orderRecordMapper;
+    private final ReviewRecordMapper reviewRecordMapper;
+    private final TestDriveRecordMapper testDriveRecordMapper;
+    private final UserProfileMapper userProfileMapper;
+    private final FinancialPlanMapper financialPlanMapper;
+    private final BrowseHistoryMapper browseHistoryMapper;
+    private final InventorySubscriptionMapper inventorySubscriptionMapper;
 
-    private final AtomicLong idGenerator = new AtomicLong(1000);
-    private final AtomicLong orderNoGenerator = new AtomicLong(20240000);
-
-    @PostConstruct
-    public void seed() {
-        if (!vehicles.isEmpty()) {
-            return;
-        }
-        UserProfile admin = new UserProfile();
-        admin.setId(1L);
-        admin.setName("管理员");
-        admin.setPhone("13800000000");
-        admin.setAddress("总部门店");
-        admin.setRegisterTime(LocalDateTime.now().minusDays(30));
-        users.put(admin.getId(), admin);
-
-        UserProfile alice = new UserProfile();
-        alice.setId(2L);
-        alice.setName("Alice");
-        alice.setPhone("13900000001");
-        alice.setAddress("上海虹桥提车中心");
-        alice.setRegisterTime(LocalDateTime.now().minusDays(12));
-        alice.getPreferBrands().addAll(Arrays.asList("蔚来", "比亚迪"));
-        alice.getPreferBatteryTypes().add("三元锂");
-        users.put(alice.getId(), alice);
-
-        Vehicle et5 = new Vehicle();
-        et5.setName("蔚来 ET5");
-        et5.setBrand("蔚来");
-        et5.setRangeKm(560);
-        et5.setBatteryType("三元锂");
-        et5.setGuidePrice(new BigDecimal("328000"));
-        et5.setStock(8);
-        et5.setLaunchDate(LocalDate.now().minusMonths(7));
-        et5.setFastChargeMinutes(35);
-        et5.setSmartDriveLevel("L2+");
-        et5.getConfigs().put("驱动形式", "双电机四驱");
-        et5.getConfigs().put("零百加速", "4.0s");
-        saveVehicle(et5);
-
-        Vehicle seal = new Vehicle();
-        seal.setName("比亚迪 海豹");
-        seal.setBrand("比亚迪");
-        seal.setRangeKm(650);
-        seal.setBatteryType("磷酸铁锂");
-        seal.setGuidePrice(new BigDecimal("228000"));
-        seal.setStock(3);
-        seal.setLaunchDate(LocalDate.now().minusMonths(10));
-        seal.setFastChargeMinutes(28);
-        seal.setSmartDriveLevel("L2");
-        seal.getConfigs().put("驱动形式", "后驱");
-        seal.getConfigs().put("零百加速", "5.9s");
-        saveVehicle(seal);
-
-        Vehicle modelY = new Vehicle();
-        modelY.setName("特斯拉 Model Y");
-        modelY.setBrand("特斯拉");
-        modelY.setRangeKm(545);
-        modelY.setBatteryType("三元锂");
-        modelY.setGuidePrice(new BigDecimal("261900"));
-        modelY.setStock(12);
-        modelY.setLaunchDate(LocalDate.now().minusYears(1));
-        modelY.setFastChargeMinutes(25);
-        modelY.setSmartDriveLevel("L2");
-        modelY.getConfigs().put("驱动形式", "双电机四驱");
-        modelY.getConfigs().put("零百加速", "5.0s");
-        saveVehicle(modelY);
-
-        Promotion sealPromotion = new Promotion();
-        sealPromotion.setVehicleId(seal.getId());
-        sealPromotion.setTitle("海豹春季折扣");
-        sealPromotion.setType("车型折扣");
-        sealPromotion.setDescription("限时 9 折并赠送家用充电桩");
-        sealPromotion.setDiscountRate(new BigDecimal("0.90"));
-        sealPromotion.setGift("家用充电桩");
-        sealPromotion.setStartDate(LocalDate.now().minusDays(10));
-        sealPromotion.setEndDate(LocalDate.now().plusDays(20));
-        savePromotion(sealPromotion);
-
-        FinancialPlan plan = new FinancialPlan();
-        plan.setVehicleId(modelY.getId());
-        plan.setName("轻享金融 20% 首付");
-        plan.setDownPaymentRate(new BigDecimal("0.20"));
-        plan.setMonths(36);
-        plan.setAnnualRate(new BigDecimal("0.038"));
-        saveFinancialPlan(plan);
-
-        OrderRecord sampleOrder = new OrderRecord();
-        sampleOrder.setUserId(alice.getId());
-        sampleOrder.setVehicleId(seal.getId());
-        sampleOrder.setQuantity(1);
-        sampleOrder.setStore("上海浦东店");
-        sampleOrder.setContactName("Alice");
-        sampleOrder.setContactPhone("13900000001");
-        sampleOrder.setCreatedAt(LocalDateTime.now().minusDays(5));
-        OrderRecord created = createOrder(sampleOrder);
-        if (created != null && created.getId() != null) {
-            markPaid(created.getId());
-        }
+    public EvSaleService(VehicleMapper vehicleMapper,
+                         PromotionMapper promotionMapper,
+                         OrderRecordMapper orderRecordMapper,
+                         ReviewRecordMapper reviewRecordMapper,
+                         TestDriveRecordMapper testDriveRecordMapper,
+                         UserProfileMapper userProfileMapper,
+                         FinancialPlanMapper financialPlanMapper,
+                         BrowseHistoryMapper browseHistoryMapper,
+                         InventorySubscriptionMapper inventorySubscriptionMapper) {
+        this.vehicleMapper = vehicleMapper;
+        this.promotionMapper = promotionMapper;
+        this.orderRecordMapper = orderRecordMapper;
+        this.reviewRecordMapper = reviewRecordMapper;
+        this.testDriveRecordMapper = testDriveRecordMapper;
+        this.userProfileMapper = userProfileMapper;
+        this.financialPlanMapper = financialPlanMapper;
+        this.browseHistoryMapper = browseHistoryMapper;
+        this.inventorySubscriptionMapper = inventorySubscriptionMapper;
     }
 
-    private Long nextId() {
-        return idGenerator.incrementAndGet();
-    }
+    // -------------------- 车型 --------------------
 
-    public synchronized Vehicle saveVehicle(Vehicle vehicle) {
+    @Transactional
+    public Vehicle saveVehicle(Vehicle vehicle) {
         if (vehicle.getId() == null) {
-            vehicle.setId(nextId());
+            vehicleMapper.insert(vehicle);
+            return vehicle;
         }
-        vehicles.put(vehicle.getId(), vehicle);
-        return vehicle;
+        vehicleMapper.updateById(vehicle);
+        return vehicleMapper.selectById(vehicle.getId());
     }
 
-    public synchronized Vehicle updateVehicle(Long id, Vehicle payload) {
-        Vehicle exist = vehicles.get(id);
+    @Transactional
+    public Vehicle updateVehicle(Long id, Vehicle payload) {
+        Vehicle exist = vehicleMapper.selectById(id);
         if (exist == null) {
             throw new IllegalArgumentException("车辆不存在");
         }
         payload.setId(id);
-        vehicles.put(id, payload);
-        return payload;
+        vehicleMapper.updateById(payload);
+        return vehicleMapper.selectById(id);
     }
 
-    public synchronized void deleteVehicle(Long id) {
-        vehicles.remove(id);
-        promotions.values().removeIf(p -> Objects.equals(p.getVehicleId(), id));
+    @Transactional
+    public void deleteVehicle(Long id) {
+        vehicleMapper.deleteById(id);
+        promotionMapper.delete(new LambdaQueryWrapper<Promotion>().eq(Promotion::getVehicleId, id));
     }
 
     public List<Vehicle> listVehicles(String brand, BigDecimal minPrice, BigDecimal maxPrice,
                                       Integer minRange, Integer maxRange, String batteryType,
                                       String sortBy, String order) {
-        Comparator<Vehicle> comparator = Comparator.comparing(Vehicle::getId);
+        QueryWrapper<Vehicle> qw = new QueryWrapper<>();
+        if (StringUtils.hasText(brand)) qw.eq("brand", brand);
+        if (minPrice != null) qw.ge("guide_price", minPrice);
+        if (maxPrice != null) qw.le("guide_price", maxPrice);
+        if (minRange != null) qw.ge("range_km", minRange);
+        if (maxRange != null) qw.le("range_km", maxRange);
+        if (StringUtils.hasText(batteryType)) qw.eq("battery_type", batteryType);
+
+        boolean desc = "desc".equalsIgnoreCase(order);
         if ("price".equalsIgnoreCase(sortBy)) {
-            comparator = Comparator.comparing(Vehicle::getGuidePrice);
+            qw.orderBy(true, !desc, "guide_price");
         } else if ("range".equalsIgnoreCase(sortBy)) {
-            comparator = Comparator.comparing(Vehicle::getRangeKm);
+            qw.orderBy(true, !desc, "range_km");
+        } else {
+            qw.orderBy(true, !desc, "id");
         }
-        if ("desc".equalsIgnoreCase(order)) {
-            comparator = comparator.reversed();
-        }
-        return vehicles.values().stream()
-                .filter(v -> !StringUtils.hasText(brand) || brand.equalsIgnoreCase(v.getBrand()))
-                .filter(v -> minPrice == null || v.getGuidePrice().compareTo(minPrice) >= 0)
-                .filter(v -> maxPrice == null || v.getGuidePrice().compareTo(maxPrice) <= 0)
-                .filter(v -> minRange == null || v.getRangeKm() >= minRange)
-                .filter(v -> maxRange == null || v.getRangeKm() <= maxRange)
-                .filter(v -> !StringUtils.hasText(batteryType) || batteryType.equalsIgnoreCase(v.getBatteryType()))
-                .sorted(comparator)
-                .collect(Collectors.toList());
+        return vehicleMapper.selectList(qw);
     }
 
     public VehicleDetail getVehicleDetail(Long vehicleId) {
-        Vehicle vehicle = vehicles.get(vehicleId);
+        Vehicle vehicle = vehicleMapper.selectById(vehicleId);
         if (vehicle == null) {
             throw new IllegalArgumentException("车辆不存在");
         }
@@ -197,61 +121,84 @@ public class EvSaleService {
     }
 
     public List<Vehicle> lowStockVehicles() {
-        return vehicles.values().stream()
-                .filter(v -> v.getStock() != null && v.getStock() <= 5)
-                .collect(Collectors.toList());
+        return vehicleMapper.selectList(new LambdaQueryWrapper<Vehicle>().le(Vehicle::getStock, 5));
     }
 
-    public synchronized Promotion savePromotion(Promotion promotion) {
-        if (promotion.getVehicleId() == null || !vehicles.containsKey(promotion.getVehicleId())) {
+    @Transactional
+    public Vehicle restockVehicle(Long vehicleId, int delta) {
+        Vehicle vehicle = vehicleMapper.selectById(vehicleId);
+        if (vehicle == null) {
+            throw new IllegalArgumentException("车辆不存在");
+        }
+        Integer before = vehicle.getStock() == null ? 0 : vehicle.getStock();
+        vehicle.setStock(before + delta);
+        vehicleMapper.updateById(vehicle);
+        if (before <= 0 && vehicle.getStock() > 0) {
+            inventorySubscriptionMapper.delete(new LambdaQueryWrapper<InventorySubscription>().eq(InventorySubscription::getVehicleId, vehicleId));
+        }
+        return vehicleMapper.selectById(vehicleId);
+    }
+
+    // -------------------- 促销 --------------------
+
+    @Transactional
+    public Promotion savePromotion(Promotion promotion) {
+        if (promotion.getVehicleId() == null || vehicleMapper.selectById(promotion.getVehicleId()) == null) {
             throw new IllegalArgumentException("需要先选择车型再关联活动");
         }
         if (promotion.getId() == null) {
-            promotion.setId(nextId());
+            promotionMapper.insert(promotion);
+            return promotion;
         }
-        promotions.put(promotion.getId(), promotion);
-        Vehicle vehicle = vehicles.get(promotion.getVehicleId());
-        if (!vehicle.getPromotionIds().contains(promotion.getId())) {
-            vehicle.getPromotionIds().add(promotion.getId());
-        }
-        return promotion;
+        promotionMapper.updateById(promotion);
+        return promotionMapper.selectById(promotion.getId());
     }
 
-    public synchronized Promotion updatePromotionStatus(Long id, PromotionStatus status) {
-        Promotion promotion = promotions.get(id);
+    @Transactional
+    public Promotion updatePromotionStatus(Long id, PromotionStatus status) {
+        Promotion promotion = promotionMapper.selectById(id);
         if (promotion == null) {
             throw new IllegalArgumentException("活动不存在");
         }
         promotion.setStatus(status);
-        return promotion;
+        promotionMapper.updateById(promotion);
+        return promotionMapper.selectById(id);
     }
 
     public List<Promotion> getActivePromotions(Long vehicleId) {
         LocalDate today = LocalDate.now();
-        return promotions.values().stream()
-                .filter(p -> Objects.equals(p.getVehicleId(), vehicleId))
-                .filter(p -> p.getStatus() == PromotionStatus.ONLINE)
-                .filter(p -> p.getStartDate() == null || !p.getStartDate().isAfter(today))
-                .filter(p -> p.getEndDate() == null || !p.getEndDate().isBefore(today))
-                .collect(Collectors.toList());
+        return promotionMapper.selectList(new LambdaQueryWrapper<Promotion>()
+                .eq(Promotion::getVehicleId, vehicleId)
+                .eq(Promotion::getStatus, PromotionStatus.ONLINE)
+                .le(Promotion::getStartDate, today)
+                .ge(Promotion::getEndDate, today));
     }
 
-    public synchronized OrderRecord createOrder(OrderRecord request) {
-        Vehicle vehicle = vehicles.get(request.getVehicleId());
-        if (vehicle == null) {
-            throw new IllegalArgumentException("车型不存在");
-        }
-        UserProfile user = users.get(request.getUserId());
-        if (user == null) {
-            throw new IllegalArgumentException("用户不存在");
-        }
+    // -------------------- 订单 --------------------
+
+    @Transactional
+    public OrderRecord createOrder(OrderRecord request) {
+        Vehicle vehicle = vehicleMapper.selectById(request.getVehicleId());
+        if (vehicle == null) throw new IllegalArgumentException("车型不存在");
+        UserProfile user = userProfileMapper.selectById(request.getUserId());
+        if (user == null) throw new IllegalArgumentException("用户不存在");
+
         int qty = request.getQuantity() == null ? 1 : request.getQuantity();
-        if (vehicle.getStock() != null && vehicle.getStock() < qty) {
-            throw new IllegalStateException("库存不足");
+        Integer stock = vehicle.getStock() == null ? 0 : vehicle.getStock();
+        if (stock < qty) throw new IllegalStateException("库存不足");
+
+        Promotion promotion = choosePromotion(request);
+        BigDecimal unitPrice = vehicle.getGuidePrice();
+        if (promotion != null && promotion.getDiscountRate() != null) {
+            unitPrice = unitPrice.multiply(promotion.getDiscountRate()).setScale(2, RoundingMode.HALF_UP);
         }
+        BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(qty));
+        if (promotion != null && promotion.getSubsidy() != null) {
+            total = total.subtract(promotion.getSubsidy()).max(BigDecimal.ZERO);
+        }
+
         OrderRecord order = new OrderRecord();
-        order.setId(nextId());
-        order.setOrderNo("EV" + orderNoGenerator.incrementAndGet());
+        order.setOrderNo(genOrderNo());
         order.setUserId(request.getUserId());
         order.setVehicleId(request.getVehicleId());
         order.setQuantity(qty);
@@ -262,202 +209,229 @@ public class EvSaleService {
         order.setCreatedAt(LocalDateTime.now());
         order.setFinancialPlanId(request.getFinancialPlanId());
         order.setRemark(request.getRemark());
-        Promotion promotion = choosePromotion(request);
+        order.setPricePerUnit(unitPrice);
+        order.setTotalAmount(total);
         if (promotion != null) {
             order.setPromotionId(promotion.getId());
             order.setPromotionTitle(promotion.getTitle());
         }
-        BigDecimal unitPrice = vehicle.getGuidePrice();
-        if (promotion != null && promotion.getDiscountRate() != null) {
-            unitPrice = unitPrice.multiply(promotion.getDiscountRate()).setScale(2, RoundingMode.HALF_UP);
-        }
-        order.setPricePerUnit(unitPrice);
-        BigDecimal total = unitPrice.multiply(BigDecimal.valueOf(qty));
-        if (promotion != null && promotion.getSubsidy() != null) {
-            total = total.subtract(promotion.getSubsidy()).max(BigDecimal.ZERO);
-        }
-        order.setTotalAmount(total);
-        orders.put(order.getId(), order);
-        if (vehicle.getStock() != null) {
-            vehicle.setStock(vehicle.getStock() - qty);
-        }
+        orderRecordMapper.insert(order);
+
+        vehicleMapper.update(null, new LambdaUpdateWrapper<Vehicle>()
+                .eq(Vehicle::getId, vehicle.getId())
+                .set(Vehicle::getStock, stock - qty));
         return order;
+    }
+
+    private String genOrderNo() {
+        return "EV" + System.currentTimeMillis() + (int) (Math.random() * 900 + 100);
     }
 
     private Promotion choosePromotion(OrderRecord request) {
         if (request.getPromotionId() != null) {
-            return promotions.get(request.getPromotionId());
+            return promotionMapper.selectById(request.getPromotionId());
         }
         List<Promotion> active = getActivePromotions(request.getVehicleId());
-        return CollectionUtils.isEmpty(active) ? null : active.get(0);
+        return active.isEmpty() ? null : active.get(0);
     }
 
-    public synchronized OrderRecord cancelOrder(Long orderId, Long userId) {
-        OrderRecord order = orders.get(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("订单不存在");
-        }
-        if (order.getStatus() != OrderStatus.WAIT_PAY) {
-            throw new IllegalStateException("仅未支付订单可取消");
-        }
-        if (userId != null && !Objects.equals(userId, order.getUserId())) {
-            throw new IllegalStateException("只能取消自己的订单");
-        }
+    @Transactional
+    public OrderRecord cancelOrder(Long orderId, Long userId) {
+        OrderRecord order = orderRecordMapper.selectById(orderId);
+        if (order == null) throw new IllegalArgumentException("订单不存在");
+        if (order.getStatus() != OrderStatus.WAIT_PAY) throw new IllegalStateException("仅未支付订单可取消");
+        if (userId != null && !Objects.equals(userId, order.getUserId())) throw new IllegalStateException("只能取消自己的订单");
+
         order.setStatus(OrderStatus.CANCELLED);
-        Vehicle vehicle = vehicles.get(order.getVehicleId());
-        if (vehicle != null && vehicle.getStock() != null) {
-            vehicle.setStock(vehicle.getStock() + order.getQuantity());
-        }
-        return order;
+        orderRecordMapper.updateById(order);
+        vehicleMapper.update(null, new LambdaUpdateWrapper<Vehicle>()
+                .eq(Vehicle::getId, order.getVehicleId())
+                .setSql("stock = stock + " + order.getQuantity()));
+        return orderRecordMapper.selectById(orderId);
     }
 
-    public synchronized OrderRecord markPaid(Long orderId) {
-        OrderRecord order = orders.get(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("订单不存在");
-        }
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalStateException("订单已取消");
-        }
+    @Transactional
+    public OrderRecord markPaid(Long orderId) {
+        OrderRecord order = orderRecordMapper.selectById(orderId);
+        if (order == null) throw new IllegalArgumentException("订单不存在");
+        if (order.getStatus() == OrderStatus.CANCELLED) throw new IllegalStateException("订单已取消");
+
         order.setStatus(OrderStatus.WAIT_PICKUP);
         order.setPaidAt(LocalDateTime.now());
-        return order;
+        orderRecordMapper.updateById(order);
+        return orderRecordMapper.selectById(orderId);
     }
 
-    public synchronized OrderRecord markPicked(Long orderId) {
-        OrderRecord order = orders.get(orderId);
-        if (order == null) {
-            throw new IllegalArgumentException("订单不存在");
-        }
+    @Transactional
+    public OrderRecord markPicked(Long orderId) {
+        OrderRecord order = orderRecordMapper.selectById(orderId);
+        if (order == null) throw new IllegalArgumentException("订单不存在");
         if (order.getStatus() != OrderStatus.WAIT_PICKUP && order.getStatus() != OrderStatus.PAID) {
             throw new IllegalStateException("仅待提车状态可操作");
         }
         order.setStatus(OrderStatus.COMPLETED);
         order.setPickupAt(LocalDateTime.now());
-        return order;
+        orderRecordMapper.updateById(order);
+        return orderRecordMapper.selectById(orderId);
     }
 
     public List<OrderRecord> listOrders() {
-        return new ArrayList<>(orders.values());
+        return orderRecordMapper.selectList(new LambdaQueryWrapper<OrderRecord>().orderByDesc(OrderRecord::getCreatedAt));
     }
 
     public List<OrderRecord> listOrders(Long userId) {
-        return orders.values().stream()
-                .filter(o -> Objects.equals(o.getUserId(), userId))
-                .sorted(Comparator.comparing(OrderRecord::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+        return orderRecordMapper.selectList(new LambdaQueryWrapper<OrderRecord>()
+                .eq(OrderRecord::getUserId, userId)
+                .orderByDesc(OrderRecord::getCreatedAt));
     }
 
-    public synchronized ReviewRecord addReview(ReviewRecord request) {
-        OrderRecord order = orders.get(request.getOrderId());
+    // -------------------- 评价 --------------------
+
+    @Transactional
+    public ReviewRecord addReview(ReviewRecord request) {
+        OrderRecord order = orderRecordMapper.selectById(request.getOrderId());
         if (order == null || order.getStatus() != OrderStatus.COMPLETED) {
             throw new IllegalStateException("仅已提车订单可评价");
         }
         if (!Objects.equals(order.getUserId(), request.getUserId())) {
             throw new IllegalStateException("只能评价自己的订单");
         }
-        request.setId(nextId());
         request.setVehicleId(order.getVehicleId());
         request.setCreatedAt(LocalDateTime.now());
-        reviews.put(request.getId(), request);
+        reviewRecordMapper.insert(request);
         return request;
     }
 
     public List<ReviewRecord> listReviews(Long vehicleId) {
-        return reviews.values().stream()
-                .filter(r -> Objects.equals(r.getVehicleId(), vehicleId))
-                .sorted(Comparator.comparing(ReviewRecord::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+        return reviewRecordMapper.selectList(new LambdaQueryWrapper<ReviewRecord>()
+                .eq(ReviewRecord::getVehicleId, vehicleId)
+                .orderByDesc(ReviewRecord::getCreatedAt));
     }
 
-    public synchronized TestDriveRecord createTestDrive(TestDriveRecord request) {
-        if (!vehicles.containsKey(request.getVehicleId())) {
-            throw new IllegalArgumentException("车型不存在");
-        }
-        if (!users.containsKey(request.getUserId())) {
-            throw new IllegalArgumentException("用户不存在");
-        }
-        request.setId(nextId());
+    // -------------------- 试驾 --------------------
+
+    @Transactional
+    public TestDriveRecord createTestDrive(TestDriveRecord request) {
+        if (vehicleMapper.selectById(request.getVehicleId()) == null) throw new IllegalArgumentException("车型不存在");
+        if (userProfileMapper.selectById(request.getUserId()) == null) throw new IllegalArgumentException("用户不存在");
         request.setStatus(TestDriveStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now());
-        testDrives.put(request.getId(), request);
+        testDriveRecordMapper.insert(request);
         return request;
     }
 
-    public synchronized TestDriveRecord reviewTestDrive(Long id, TestDriveStatus status, String note) {
-        TestDriveRecord record = testDrives.get(id);
-        if (record == null) {
-            throw new IllegalArgumentException("预约不存在");
-        }
+    @Transactional
+    public TestDriveRecord reviewTestDrive(Long id, TestDriveStatus status, String note) {
+        TestDriveRecord record = testDriveRecordMapper.selectById(id);
+        if (record == null) throw new IllegalArgumentException("预约不存在");
         record.setStatus(status);
         record.setAdminNote(note);
-        return record;
+        testDriveRecordMapper.updateById(record);
+        return testDriveRecordMapper.selectById(id);
     }
 
     public List<TestDriveRecord> listTestDrives(Long userId) {
-        return testDrives.values().stream()
-                .filter(r -> userId == null || Objects.equals(r.getUserId(), userId))
-                .sorted(Comparator.comparing(TestDriveRecord::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+        LambdaQueryWrapper<TestDriveRecord> qw = new LambdaQueryWrapper<TestDriveRecord>().orderByDesc(TestDriveRecord::getCreatedAt);
+        if (userId != null) qw.eq(TestDriveRecord::getUserId, userId);
+        return testDriveRecordMapper.selectList(qw);
     }
+
+    // -------------------- 对比/推荐/浏览/订阅 --------------------
 
     public List<Vehicle> compareVehicles(List<Long> vehicleIds) {
-        return vehicleIds.stream()
-                .map(vehicles::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    public List<Vehicle> recommendVehicles(Long userId) {
-        List<Long> viewed = browseHistory.getOrDefault(userId, Collections.emptyList());
-        Optional<String> recentBrand = viewed.stream()
-                .map(vehicles::get)
-                .filter(Objects::nonNull)
-                .map(Vehicle::getBrand)
-                .findFirst();
-        return vehicles.values().stream()
-                .filter(v -> !recentBrand.isPresent() || v.getBrand().equalsIgnoreCase(recentBrand.get()))
-                .sorted(Comparator.comparing(Vehicle::getStock, Comparator.nullsLast(Comparator.reverseOrder())))
-                .limit(3)
-                .collect(Collectors.toList());
+        if (vehicleIds == null || vehicleIds.isEmpty()) return Collections.emptyList();
+        return vehicleMapper.selectBatchIds(vehicleIds);
     }
 
     public void recordBrowse(Long userId, Long vehicleId) {
-        browseHistory.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>()).add(0, vehicleId);
-        List<Long> list = browseHistory.get(userId);
-        if (list.size() > 20) {
-            list.remove(list.size() - 1);
+        BrowseHistory h = new BrowseHistory();
+        h.setUserId(userId);
+        h.setVehicleId(vehicleId);
+        h.setBrowseTime(LocalDateTime.now());
+        browseHistoryMapper.insert(h);
+    }
+
+    public List<Vehicle> recommendVehicles(Long userId) {
+        List<BrowseHistory> latest = browseHistoryMapper.selectList(new LambdaQueryWrapper<BrowseHistory>()
+                .eq(BrowseHistory::getUserId, userId)
+                .orderByDesc(BrowseHistory::getBrowseTime)
+                .last("limit 20"));
+        String brand = null;
+        for (BrowseHistory h : latest) {
+            Vehicle v = vehicleMapper.selectById(h.getVehicleId());
+            if (v != null) {
+                brand = v.getBrand();
+                break;
+            }
+        }
+        LambdaQueryWrapper<Vehicle> qw = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(brand)) qw.eq(Vehicle::getBrand, brand);
+        qw.orderByDesc(Vehicle::getStock).last("limit 3");
+        return vehicleMapper.selectList(qw);
+    }
+
+    public void subscribeInventory(Long userId, Long vehicleId) {
+        InventorySubscription sub = new InventorySubscription();
+        sub.setUserId(userId);
+        sub.setVehicleId(vehicleId);
+        sub.setNotified(false);
+        try {
+            inventorySubscriptionMapper.insert(sub);
+        } catch (DuplicateKeyException ignore) {
+            // already subscribed
         }
     }
 
-    public synchronized void subscribeInventory(Long userId, Long vehicleId) {
-        inventorySubscriptions.computeIfAbsent(vehicleId, k -> new ArrayList<>());
-        List<Long> subscribers = inventorySubscriptions.get(vehicleId);
-        if (!subscribers.contains(userId)) {
-            subscribers.add(userId);
+    // -------------------- 用户/金融 --------------------
+
+    @Transactional
+    public UserProfile saveUser(UserProfile userProfile) {
+        if (userProfile.getId() == null) {
+            userProfile.setRegisterTime(LocalDateTime.now());
+            userProfileMapper.insert(userProfile);
+            return userProfile;
         }
+        userProfileMapper.updateById(userProfile);
+        return userProfileMapper.selectById(userProfile.getId());
     }
 
-    public synchronized Vehicle restockVehicle(Long vehicleId, int delta) {
-        Vehicle vehicle = vehicles.get(vehicleId);
-        if (vehicle == null) {
-            throw new IllegalArgumentException("车辆不存在");
-        }
-        int before = vehicle.getStock() == null ? 0 : vehicle.getStock();
-        vehicle.setStock(before + delta);
-        if (before <= 0 && vehicle.getStock() > 0) {
-            inventorySubscriptions.remove(vehicleId);
-        }
-        return vehicle;
+    public List<UserProfile> listUsers() {
+        return userProfileMapper.selectList(new LambdaQueryWrapper<UserProfile>().orderByDesc(UserProfile::getRegisterTime));
     }
+
+    public UserProfile getUserProfile(Long userId) {
+        return userProfileMapper.selectById(userId);
+    }
+
+    @Transactional
+    public FinancialPlan saveFinancialPlan(FinancialPlan plan) {
+        if (plan.getVehicleId() == null || vehicleMapper.selectById(plan.getVehicleId()) == null) {
+            throw new IllegalArgumentException("车型不存在");
+        }
+        if (plan.getId() == null) {
+            financialPlanMapper.insert(plan);
+            return plan;
+        }
+        financialPlanMapper.updateById(plan);
+        return financialPlanMapper.selectById(plan.getId());
+    }
+
+    public List<FinancialPlan> listFinancialPlans(Long vehicleId) {
+        LambdaQueryWrapper<FinancialPlan> qw = new LambdaQueryWrapper<>();
+        if (vehicleId != null) qw.eq(FinancialPlan::getVehicleId, vehicleId);
+        return financialPlanMapper.selectList(qw);
+    }
+
+    // -------------------- 统计 --------------------
 
     public Map<String, Object> stats(LocalDate start, LocalDate end) {
-        LocalDateTime from = start == null ? LocalDate.MIN.atStartOfDay() : start.atStartOfDay();
+        LocalDateTime from = start == null ? LocalDateTime.MIN : start.atStartOfDay();
         LocalDateTime to = end == null ? LocalDateTime.now() : end.plusDays(1).atStartOfDay();
-        List<OrderRecord> scoped = orders.values().stream()
-                .filter(o -> o.getCreatedAt() != null && !o.getCreatedAt().isBefore(from) && o.getCreatedAt().isBefore(to))
-                .filter(o -> o.getStatus() != OrderStatus.CANCELLED)
-                .collect(Collectors.toList());
+
+        List<OrderRecord> scoped = orderRecordMapper.selectList(new LambdaQueryWrapper<OrderRecord>()
+                .ge(OrderRecord::getCreatedAt, from)
+                .lt(OrderRecord::getCreatedAt, to)
+                .ne(OrderRecord::getStatus, OrderStatus.CANCELLED));
 
         Map<Long, Integer> qtyByVehicle = new HashMap<>();
         Map<Long, BigDecimal> amountByVehicle = new HashMap<>();
@@ -467,12 +441,13 @@ public class EvSaleService {
                 amountByVehicle.merge(order.getVehicleId(), order.getTotalAmount(), BigDecimal::add);
             }
         }
+
         List<Map<String, Object>> topVehicles = qtyByVehicle.entrySet().stream()
                 .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
                 .limit(5)
                 .map(e -> {
                     Map<String, Object> map = new HashMap<>();
-                    Vehicle vehicle = vehicles.get(e.getKey());
+                    Vehicle vehicle = vehicleMapper.selectById(e.getKey());
                     map.put("vehicle", vehicle);
                     map.put("qty", e.getValue());
                     map.put("amount", amountByVehicle.getOrDefault(e.getKey(), BigDecimal.ZERO));
@@ -480,19 +455,19 @@ public class EvSaleService {
                 }).collect(Collectors.toList());
 
         Map<String, Long> brandShare = scoped.stream()
-                .map(o -> vehicles.get(o.getVehicleId()))
+                .map(o -> vehicleMapper.selectById(o.getVehicleId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(Vehicle::getBrand, Collectors.counting()));
 
         Map<String, Long> rangeShare = scoped.stream()
-                .map(o -> vehicles.get(o.getVehicleId()))
+                .map(o -> vehicleMapper.selectById(o.getVehicleId()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(this::rangeBucket, Collectors.counting()));
 
-        long newUsers = users.values().stream()
-                .filter(u -> u.getRegisterTime() != null)
-                .filter(u -> !u.getRegisterTime().isBefore(from) && u.getRegisterTime().isBefore(to))
-                .count();
+        long newUsers = userProfileMapper.selectList(new LambdaQueryWrapper<UserProfile>()
+                        .ge(UserProfile::getRegisterTime, from)
+                        .lt(UserProfile::getRegisterTime, to))
+                .size();
 
         BigDecimal totalAmount = scoped.stream()
                 .map(OrderRecord::getTotalAmount)
@@ -510,46 +485,11 @@ public class EvSaleService {
     }
 
     private String rangeBucket(Vehicle vehicle) {
-        if (vehicle.getRangeKm() == null) {
-            return "未知";
-        }
+        if (vehicle == null || vehicle.getRangeKm() == null) return "未知";
         int r = vehicle.getRangeKm();
-        if (r < 400) {
-            return "＜400km";
-        }
-        if (r < 600) {
-            return "400-600km";
-        }
+        if (r < 400) return "＜400km";
+        if (r < 600) return "400-600km";
         return "≥600km";
     }
-
-    public UserProfile saveUser(UserProfile userProfile) {
-        if (userProfile.getId() == null) {
-            userProfile.setId(nextId());
-            userProfile.setRegisterTime(LocalDateTime.now());
-        }
-        users.put(userProfile.getId(), userProfile);
-        return userProfile;
-    }
-
-    public Collection<UserProfile> listUsers() {
-        return users.values();
-    }
-
-    public FinancialPlan saveFinancialPlan(FinancialPlan plan) {
-        if (!vehicles.containsKey(plan.getVehicleId())) {
-            throw new IllegalArgumentException("车型不存在");
-        }
-        if (plan.getId() == null) {
-            plan.setId(nextId());
-        }
-        financialPlans.put(plan.getId(), plan);
-        return plan;
-    }
-
-    public List<FinancialPlan> listFinancialPlans(Long vehicleId) {
-        return financialPlans.values().stream()
-                .filter(p -> vehicleId == null || Objects.equals(p.getVehicleId(), vehicleId))
-                .collect(Collectors.toList());
-    }
 }
+
