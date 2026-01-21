@@ -312,7 +312,7 @@ export default {
         })
     },
     created() {
-        this.loadAllVehicles()
+        this.loadVehicles()
         this.loadRecommend()
         this.loadOrders()
         this.loadTestDrives()
