@@ -114,7 +114,6 @@ import {
   listReviews,
   addReview,
   createOrder,
-  listOrders,
   createTestDrive,
   subscribeInventory
 } from '@/api/ev'
@@ -194,25 +193,11 @@ export default {
       if (res.status) this.$message.success('已订阅库存提醒')
     },
     async submitReview() {
-      // 获取用户订单列表
-      const ordersRes = await listOrders(this.userId)
-      if (!ordersRes.status || !ordersRes.data || ordersRes.data.length === 0) {
-        this.$message.error('暂无订单记录')
-        return
-      }
-
-      // 检查是否有该车型的已提车订单
-      const completedOrder = ordersRes.data.find(o => o.vehicleId === this.vehicleId && o.status === 'COMPLETED')
-      if (!completedOrder) {
-        this.$message.error('只有已提车的订单才能评价')
-        return
-      }
-
       const payload = {
         ...this.reviewForm,
         userId: this.userId,
         vehicleId: this.vehicleId,
-        orderId: completedOrder.id
+        orderId: null
       }
       const res = await addReview(payload)
       if (res.status) {

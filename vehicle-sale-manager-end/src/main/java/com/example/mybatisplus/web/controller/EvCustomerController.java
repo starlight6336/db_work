@@ -21,19 +21,20 @@ public class EvCustomerController {
 
     @GetMapping("/vehicles")
     public JsonResponse<List<Vehicle>> searchVehicles(@RequestParam(required = false) String brand,
-                                                      @RequestParam(required = false) BigDecimal minPrice,
-                                                      @RequestParam(required = false) BigDecimal maxPrice,
-                                                      @RequestParam(required = false) Integer minRange,
-                                                      @RequestParam(required = false) Integer maxRange,
-                                                      @RequestParam(required = false) String batteryType,
-                                                      @RequestParam(required = false, defaultValue = "id") String sort,
-                                                      @RequestParam(required = false, defaultValue = "asc") String order) {
-        return JsonResponse.success(evSaleService.listVehicles(brand, minPrice, maxPrice, minRange, maxRange, batteryType, sort, order));
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Integer minRange,
+            @RequestParam(required = false) Integer maxRange,
+            @RequestParam(required = false) String batteryType,
+            @RequestParam(required = false, defaultValue = "id") String sort,
+            @RequestParam(required = false, defaultValue = "asc") String order) {
+        return JsonResponse.success(
+                evSaleService.listVehicles(brand, minPrice, maxPrice, minRange, maxRange, batteryType, sort, order));
     }
 
     @GetMapping("/vehicles/{id}")
     public JsonResponse<VehicleDetail> vehicleDetail(@PathVariable Long id,
-                                                     @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (userId != null) {
             evSaleService.recordBrowse(userId, id);
         }
@@ -47,7 +48,7 @@ public class EvCustomerController {
 
     @PostMapping("/orders")
     public JsonResponse<OrderRecord> createOrder(@RequestBody OrderRecord request,
-                                                 @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (request.getUserId() == null) {
             request.setUserId(userId);
         }
@@ -80,7 +81,7 @@ public class EvCustomerController {
 
     @PostMapping("/test-drives")
     public JsonResponse<TestDriveRecord> createTestDrive(@RequestBody TestDriveRecord request,
-                                                         @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
         if (request.getUserId() == null) {
             request.setUserId(userId);
         }

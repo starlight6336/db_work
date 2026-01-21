@@ -37,14 +37,14 @@ public class EvSaleService {
     private final InventorySubscriptionMapper inventorySubscriptionMapper;
 
     public EvSaleService(VehicleMapper vehicleMapper,
-                         PromotionMapper promotionMapper,
-                         OrderRecordMapper orderRecordMapper,
-                         ReviewRecordMapper reviewRecordMapper,
-                         TestDriveRecordMapper testDriveRecordMapper,
-                         UserProfileMapper userProfileMapper,
-                         FinancialPlanMapper financialPlanMapper,
-                         BrowseHistoryMapper browseHistoryMapper,
-                         InventorySubscriptionMapper inventorySubscriptionMapper) {
+            PromotionMapper promotionMapper,
+            OrderRecordMapper orderRecordMapper,
+            ReviewRecordMapper reviewRecordMapper,
+            TestDriveRecordMapper testDriveRecordMapper,
+            UserProfileMapper userProfileMapper,
+            FinancialPlanMapper financialPlanMapper,
+            BrowseHistoryMapper browseHistoryMapper,
+            InventorySubscriptionMapper inventorySubscriptionMapper) {
         this.vehicleMapper = vehicleMapper;
         this.promotionMapper = promotionMapper;
         this.orderRecordMapper = orderRecordMapper;
@@ -86,15 +86,20 @@ public class EvSaleService {
     }
 
     public List<Vehicle> listVehicles(String brand, BigDecimal minPrice, BigDecimal maxPrice,
-                                      Integer minRange, Integer maxRange, String batteryType,
-                                      String sortBy, String order) {
+            Integer minRange, Integer maxRange, String batteryType,
+            String sortBy, String order) {
         QueryWrapper<Vehicle> qw = new QueryWrapper<>();
-        if (StringUtils.hasText(brand)) qw.eq("brand", brand);
-        if (minPrice != null && minPrice.compareTo(BigDecimal.ZERO) > 0) qw.ge("guide_price", minPrice);
-        if (maxPrice != null && maxPrice.compareTo(BigDecimal.ZERO) > 0) qw.le("guide_price", maxPrice);
-        if (minRange != null && minRange > 0) qw.ge("range_km", minRange);
-        if (maxRange != null && maxRange > 0) qw.le("range_km", maxRange);
-        if (StringUtils.hasText(batteryType)) qw.eq("battery_type", batteryType);
+        if (StringUtils.hasText(brand))
+            if (minPrice != null)
+                qw.ge("guide_price", minPrice);
+        if (maxPrice != null)
+            qw.le("guide_price", maxPrice);
+        if (minRange != null && minRange > 0)
+            qw.ge("range_km", minRange);
+        if (maxRange != null && maxRange > 0)
+            qw.le("range_km", maxRange);
+        if (StringUtils.hasText(batteryType))
+            qw.eq("battery_type", batteryType);
 
         boolean desc = "desc".equalsIgnoreCase(order);
         if ("price".equalsIgnoreCase(sortBy)) {
@@ -134,7 +139,8 @@ public class EvSaleService {
         vehicle.setStock(before + delta);
         vehicleMapper.updateById(vehicle);
         if (before <= 0 && vehicle.getStock() > 0) {
-            inventorySubscriptionMapper.delete(new LambdaQueryWrapper<InventorySubscription>().eq(InventorySubscription::getVehicleId, vehicleId));
+            inventorySubscriptionMapper.delete(
+                    new LambdaQueryWrapper<InventorySubscription>().eq(InventorySubscription::getVehicleId, vehicleId));
         }
         return vehicleMapper.selectById(vehicleId);
     }
@@ -179,13 +185,23 @@ public class EvSaleService {
     @Transactional
     public OrderRecord createOrder(OrderRecord request) {
         Vehicle vehicle = vehicleMapper.selectById(request.getVehicleId());
-        if (vehicle == null) throw new IllegalArgumentException("车型不存在");
+        if (vehicle == null)
+            throw new IllegalArgumentException("车型不存在");
         UserProfile user = userProfileMapper.selectById(request.getUserId());
-        if (user == null) throw new IllegalArgumentException("用户不存在");
+        if (user == null) {
+            // 如果用户个人信息不存在，自动创建一个基本记录
+            user = new UserProfile();
+            user.setId(request.getUserId());
+            user.setRegisterTime(LocalDateTime.now());
+            user.setCreateDate(LocalDateTime.now());
+            user.setUpdateDate(LocalDateTime.now());
+            userProfileMapper.insert(user);
+        }
 
         int qty = request.getQuantity() == null ? 1 : request.getQuantity();
         Integer stock = vehicle.getStock() == null ? 0 : vehicle.getStock();
-        if (stock < qty) throw new IllegalStateException("库存不足");
+        if (stock < qty)
+            throw new IllegalStateException("库存不足");
 
         Promotion promotion = choosePromotion(request);
         BigDecimal unitPrice = vehicle.getGuidePrice();
@@ -199,6 +215,7 @@ public class EvSaleService {
 
         OrderRecord order = new OrderRecord();
         order.setOrderNo(genOrderNo());
+        LocalDateTime now = LocalDateTime.now();
         order.setUserId(request.getUserId());
         order.setVehicleId(request.getVehicleId());
         order.setQuantity(qty);
@@ -206,7 +223,9 @@ public class EvSaleService {
         order.setContactName(request.getContactName());
         order.setContactPhone(request.getContactPhone());
         order.setStatus(OrderStatus.WAIT_PAY);
-        order.setCreatedAt(LocalDateTime.now());
+        order.setCreatedAt(now);
+        order.setCreateDate(now);
+        order.setUpdateDate(now);
         order.setFinancialPlanId(request.getFinancialPlanId());
         order.setRemark(request.getRemark());
         order.setPricePerUnit(unitPrice);
@@ -238,11 +257,15 @@ public class EvSaleService {
     @Transactional
     public OrderRecord cancelOrder(Long orderId, Long userId) {
         OrderRecord order = orderRecordMapper.selectById(orderId);
-        if (order == null) throw new IllegalArgumentException("订单不存在");
-        if (order.getStatus() != OrderStatus.WAIT_PAY) throw new IllegalStateException("仅未支付订单可取消");
-        if (userId != null && !Objects.equals(userId, order.getUserId())) throw new IllegalStateException("只能取消自己的订单");
+        if (order == null)
+            throw new IllegalArgumentException("订单不存在");
+        if (order.getStatus() != OrderStatus.WAIT_PAY)
+            throw new IllegalStateException("仅未支付订单可取消");
+        if (userId != null && !Objects.equals(userId, order.getUserId()))
+            throw new IllegalStateException("只能取消自己的订单");
 
         order.setStatus(OrderStatus.CANCELLED);
+        order.setUpdateDate(LocalDateTime.now());
         orderRecordMapper.updateById(order);
         vehicleMapper.update(null, new LambdaUpdateWrapper<Vehicle>()
                 .eq(Vehicle::getId, order.getVehicleId())
@@ -253,11 +276,15 @@ public class EvSaleService {
     @Transactional
     public OrderRecord markPaid(Long orderId) {
         OrderRecord order = orderRecordMapper.selectById(orderId);
-        if (order == null) throw new IllegalArgumentException("订单不存在");
-        if (order.getStatus() == OrderStatus.CANCELLED) throw new IllegalStateException("订单已取消");
+        if (order == null)
+            throw new IllegalArgumentException("订单不存在");
+        if (order.getStatus() == OrderStatus.CANCELLED)
+            throw new IllegalStateException("订单已取消");
 
         order.setStatus(OrderStatus.WAIT_PICKUP);
-        order.setPaidAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        order.setPaidAt(now);
+        order.setUpdateDate(now);
         orderRecordMapper.updateById(order);
         return orderRecordMapper.selectById(orderId);
     }
@@ -265,18 +292,22 @@ public class EvSaleService {
     @Transactional
     public OrderRecord markPicked(Long orderId) {
         OrderRecord order = orderRecordMapper.selectById(orderId);
-        if (order == null) throw new IllegalArgumentException("订单不存在");
+        if (order == null)
+            throw new IllegalArgumentException("订单不存在");
         if (order.getStatus() != OrderStatus.WAIT_PICKUP && order.getStatus() != OrderStatus.PAID) {
             throw new IllegalStateException("仅待提车状态可操作");
         }
         order.setStatus(OrderStatus.COMPLETED);
-        order.setPickupAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        order.setPickupAt(now);
+        order.setUpdateDate(now);
         orderRecordMapper.updateById(order);
         return orderRecordMapper.selectById(orderId);
     }
 
     public List<OrderRecord> listOrders() {
-        return orderRecordMapper.selectList(new LambdaQueryWrapper<OrderRecord>().orderByDesc(OrderRecord::getCreatedAt));
+        return orderRecordMapper
+                .selectList(new LambdaQueryWrapper<OrderRecord>().orderByDesc(OrderRecord::getCreatedAt));
     }
 
     public List<OrderRecord> listOrders(Long userId) {
@@ -289,15 +320,34 @@ public class EvSaleService {
 
     @Transactional
     public ReviewRecord addReview(ReviewRecord request) {
-        OrderRecord order = orderRecordMapper.selectById(request.getOrderId());
-        if (order == null || order.getStatus() != OrderStatus.COMPLETED) {
-            throw new IllegalStateException("仅已提车订单可评价");
+        // 检查用户是否有已提车的订单
+        int completedOrderCount = orderRecordMapper.selectCount(new LambdaQueryWrapper<OrderRecord>()
+                .eq(OrderRecord::getUserId, request.getUserId())
+                .eq(OrderRecord::getStatus, OrderStatus.COMPLETED));
+        if (completedOrderCount == 0) {
+            throw new IllegalStateException("仅已提车用户可评价");
         }
-        if (!Objects.equals(order.getUserId(), request.getUserId())) {
-            throw new IllegalStateException("只能评价自己的订单");
+
+        // 如果提供了orderId，验证订单是否已提车且属于该用户
+        if (request.getOrderId() != null) {
+            OrderRecord order = orderRecordMapper.selectById(request.getOrderId());
+            if (order == null || order.getStatus() != OrderStatus.COMPLETED) {
+                throw new IllegalStateException("仅已提车订单可评价");
+            }
+            if (!Objects.equals(order.getUserId(), request.getUserId())) {
+                throw new IllegalStateException("只能评价自己的订单");
+            }
+            request.setVehicleId(order.getVehicleId());
         }
-        request.setVehicleId(order.getVehicleId());
-        request.setCreatedAt(LocalDateTime.now());
+        // 如果没有提供orderId，直接使用request中的vehicleId
+        // 验证vehicleId是否存在
+        if (request.getVehicleId() == null || vehicleMapper.selectById(request.getVehicleId()) == null) {
+            throw new IllegalArgumentException("车型不存在");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        request.setCreatedAt(now);
+        request.setCreateDate(now);
+        request.setUpdateDate(now);
         reviewRecordMapper.insert(request);
         return request;
     }
@@ -312,10 +362,23 @@ public class EvSaleService {
 
     @Transactional
     public TestDriveRecord createTestDrive(TestDriveRecord request) {
-        if (vehicleMapper.selectById(request.getVehicleId()) == null) throw new IllegalArgumentException("车型不存在");
-        if (userProfileMapper.selectById(request.getUserId()) == null) throw new IllegalArgumentException("用户不存在");
+        if (vehicleMapper.selectById(request.getVehicleId()) == null)
+            throw new IllegalArgumentException("车型不存在");
+        UserProfile user = userProfileMapper.selectById(request.getUserId());
+        if (user == null) {
+            // 如果用户个人信息不存在，自动创建一个基本记录
+            user = new UserProfile();
+            user.setId(request.getUserId());
+            user.setRegisterTime(LocalDateTime.now());
+            user.setCreateDate(LocalDateTime.now());
+            user.setUpdateDate(LocalDateTime.now());
+            userProfileMapper.insert(user);
+        }
         request.setStatus(TestDriveStatus.PENDING);
-        request.setCreatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        request.setCreatedAt(now);
+        request.setCreateDate(now);
+        request.setUpdateDate(now);
         testDriveRecordMapper.insert(request);
         return request;
     }
@@ -323,26 +386,25 @@ public class EvSaleService {
     @Transactional
     public TestDriveRecord reviewTestDrive(Long id, TestDriveStatus status, String note) {
         TestDriveRecord record = testDriveRecordMapper.selectById(id);
-        if (record == null) throw new IllegalArgumentException("预约不存在");
+        if (record == null)
+            throw new IllegalArgumentException("预约不存在");
         record.setStatus(status);
         record.setAdminNote(note);
+        record.setUpdateDate(LocalDateTime.now());
         testDriveRecordMapper.updateById(record);
         return testDriveRecordMapper.selectById(id);
     }
 
     public List<TestDriveRecord> listTestDrives(Long userId) {
-        LambdaQueryWrapper<TestDriveRecord> qw = new LambdaQueryWrapper<TestDriveRecord>().orderByDesc(TestDriveRecord::getCreatedAt);
-        if (userId != null) qw.eq(TestDriveRecord::getUserId, userId);
+        LambdaQueryWrapper<TestDriveRecord> qw = new LambdaQueryWrapper<TestDriveRecord>();
+        if (userId != null)
+            qw.eq(TestDriveRecord::getUserId, userId);
         return testDriveRecordMapper.selectList(qw);
     }
 
-    // -------------------- 对比/推荐/浏览/订阅 --------------------
+    // -------------------- 浏览记录 --------------------
 
-    public List<Vehicle> compareVehicles(List<Long> vehicleIds) {
-        if (vehicleIds == null || vehicleIds.isEmpty()) return Collections.emptyList();
-        return vehicleMapper.selectBatchIds(vehicleIds);
-    }
-
+    @Transactional
     public void recordBrowse(Long userId, Long vehicleId) {
         BrowseHistory h = new BrowseHistory();
         h.setUserId(userId);
@@ -351,26 +413,136 @@ public class EvSaleService {
         browseHistoryMapper.insert(h);
     }
 
+    // -------------------- 智能推荐 --------------------
+
     public List<Vehicle> recommendVehicles(Long userId) {
-        List<BrowseHistory> latest = browseHistoryMapper.selectList(new LambdaQueryWrapper<BrowseHistory>()
-                .eq(BrowseHistory::getUserId, userId)
-                .orderByDesc(BrowseHistory::getBrowseTime)
-                .last("limit 20"));
-        String brand = null;
-        for (BrowseHistory h : latest) {
-            Vehicle v = vehicleMapper.selectById(h.getVehicleId());
-            if (v != null) {
-                brand = v.getBrand();
-                break;
+        List<BrowseHistory> history = browseHistoryMapper.selectList(
+                new LambdaQueryWrapper<BrowseHistory>()
+                        .eq(BrowseHistory::getUserId, userId)
+                        .orderByDesc(BrowseHistory::getBrowseTime)
+                        .last("limit 5"));
+
+        Set<Long> excludeIds = new HashSet<>();
+        String preferredBrand = null;
+        BigDecimal avgPrice = null;
+        Integer avgRange = null;
+
+        if (!history.isEmpty()) {
+            List<BigDecimal> prices = new ArrayList<>();
+            List<Integer> ranges = new ArrayList<>();
+            Map<String, Integer> brandCounts = new HashMap<>();
+
+            for (BrowseHistory h : history) {
+                Vehicle v = vehicleMapper.selectById(h.getVehicleId());
+                if (v != null) {
+                    excludeIds.add(v.getId());
+                    prices.add(v.getGuidePrice());
+                    ranges.add(v.getRangeKm());
+                    brandCounts.put(v.getBrand(), brandCounts.getOrDefault(v.getBrand(), 0) + 1);
+                }
+            }
+
+            if (!brandCounts.isEmpty()) {
+                preferredBrand = brandCounts.entrySet().stream()
+                        .max(Map.Entry.comparingByValue())
+                        .get().getKey();
+            }
+
+            if (!prices.isEmpty()) {
+                avgPrice = prices.stream().reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(BigDecimal.valueOf(prices.size()), 2, RoundingMode.HALF_UP);
+            }
+
+            if (!ranges.isEmpty()) {
+                avgRange = ranges.stream().reduce(0, Integer::sum) / ranges.size();
             }
         }
-        LambdaQueryWrapper<Vehicle> qw = new LambdaQueryWrapper<>();
-        if (StringUtils.hasText(brand)) qw.eq(Vehicle::getBrand, brand);
-        qw.orderByDesc(Vehicle::getStock).last("limit 3");
-        return vehicleMapper.selectList(qw);
+
+        List<Vehicle> recommendations = new ArrayList<>();
+
+        // 1. 推荐相似车型
+        if (!excludeIds.isEmpty()) {
+            for (Long id : excludeIds) {
+                Vehicle vehicle = vehicleMapper.selectById(id);
+                if (vehicle != null) {
+                    recommendations.addAll(getSimilarVehicles(vehicle, excludeIds));
+                }
+            }
+        }
+
+        // 2. 推荐同品牌车型
+        if (StringUtils.hasText(preferredBrand)) {
+            recommendations.addAll(getSameBrandVehicles(preferredBrand, excludeIds));
+        }
+
+        // 3. 推荐高性价比车型
+        recommendations.addAll(getHighValueVehicles());
+
+        // 去重并限制数量
+        Set<Long> seen = new HashSet<>();
+        List<Vehicle> result = new ArrayList<>();
+        for (Vehicle v : recommendations) {
+            if (!seen.contains(v.getId())) {
+                seen.add(v.getId());
+                result.add(v);
+                if (result.size() >= 6)
+                    break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 获取相似车型
+     */
+    private List<Vehicle> getSimilarVehicles(Vehicle vehicle, Set<Long> excludeIds) {
+        return vehicleMapper.selectList(new LambdaQueryWrapper<Vehicle>()
+                .notIn(Vehicle::getId, excludeIds)
+                .eq(Vehicle::getBatteryType, vehicle.getBatteryType())
+                .orderByDesc(Vehicle::getStock)
+                .last("limit 3"));
+    }
+
+    /**
+     * 获取同品牌的车型
+     */
+    private List<Vehicle> getSameBrandVehicles(String brand, Set<Long> excludeIds) {
+        return vehicleMapper.selectList(new LambdaQueryWrapper<Vehicle>()
+                .eq(Vehicle::getBrand, brand)
+                .notIn(Vehicle::getId, excludeIds)
+                .orderByDesc(Vehicle::getStock)
+                .last("limit 3"));
+    }
+
+    /**
+     * 获取高性价比车型
+     */
+    private List<Vehicle> getHighValueVehicles() {
+        return vehicleMapper.selectList(new LambdaQueryWrapper<Vehicle>()
+                .orderByDesc(Vehicle::getRangeKm)
+                .orderByAsc(Vehicle::getGuidePrice)
+                .last("limit 6"));
+    }
+
+    /**
+     * 比较车型
+     */
+    public List<Vehicle> compareVehicles(List<Long> vehicleIds) {
+        return vehicleMapper.selectBatchIds(vehicleIds);
     }
 
     public void subscribeInventory(Long userId, Long vehicleId) {
+        UserProfile user = userProfileMapper.selectById(userId);
+        if (user == null) {
+            // 如果用户个人信息不存在，自动创建一个基本记录
+            user = new UserProfile();
+            user.setId(userId);
+            user.setRegisterTime(LocalDateTime.now());
+            user.setCreateDate(LocalDateTime.now());
+            user.setUpdateDate(LocalDateTime.now());
+            userProfileMapper.insert(user);
+        }
         InventorySubscription sub = new InventorySubscription();
         sub.setUserId(userId);
         sub.setVehicleId(vehicleId);
@@ -396,7 +568,8 @@ public class EvSaleService {
     }
 
     public List<UserProfile> listUsers() {
-        return userProfileMapper.selectList(new LambdaQueryWrapper<UserProfile>().orderByDesc(UserProfile::getRegisterTime));
+        return userProfileMapper
+                .selectList(new LambdaQueryWrapper<UserProfile>().orderByDesc(UserProfile::getRegisterTime));
     }
 
     public UserProfile getUserProfile(Long userId) {
@@ -418,7 +591,8 @@ public class EvSaleService {
 
     public List<FinancialPlan> listFinancialPlans(Long vehicleId) {
         LambdaQueryWrapper<FinancialPlan> qw = new LambdaQueryWrapper<>();
-        if (vehicleId != null) qw.eq(FinancialPlan::getVehicleId, vehicleId);
+        if (vehicleId != null)
+            qw.eq(FinancialPlan::getVehicleId, vehicleId);
         return financialPlanMapper.selectList(qw);
     }
 
@@ -465,8 +639,8 @@ public class EvSaleService {
                 .collect(Collectors.groupingBy(this::rangeBucket, Collectors.counting()));
 
         long newUsers = userProfileMapper.selectList(new LambdaQueryWrapper<UserProfile>()
-                        .ge(UserProfile::getRegisterTime, from)
-                        .lt(UserProfile::getRegisterTime, to))
+                .ge(UserProfile::getRegisterTime, from)
+                .lt(UserProfile::getRegisterTime, to))
                 .size();
 
         BigDecimal totalAmount = scoped.stream()
@@ -485,11 +659,13 @@ public class EvSaleService {
     }
 
     private String rangeBucket(Vehicle vehicle) {
-        if (vehicle == null || vehicle.getRangeKm() == null) return "未知";
+        if (vehicle == null || vehicle.getRangeKm() == null)
+            return "未知";
         int r = vehicle.getRangeKm();
-        if (r < 400) return "＜400km";
-        if (r < 600) return "400-600km";
+        if (r < 400)
+            return "＜400km";
+        if (r < 600)
+            return "400-600km";
         return "≥600km";
     }
 }
-

@@ -133,6 +133,191 @@ VALUES (
         NOW(),
         NOW(),
         0
+    ),
+    (
+        4,
+        '小鹏 P7',
+        '小鹏',
+        610,
+        '三元锂',
+        209900.00,
+        6,
+        '2021-03-01',
+        30,
+        'L2+',
+        '小鹏P7是一款中型纯电轿车',
+        JSON_OBJECT('驱动形式', '后驱', '零百加速', '6.4s'),
+        JSON_ARRAY(
+            'https://example.com/p7-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        5,
+        '理想 L7',
+        '理想',
+        1315,
+        '三元锂',
+        319800.00,
+        9,
+        '2023-02-01',
+        40,
+        'L2',
+        '理想L7是一款中大型SUV',
+        JSON_OBJECT('驱动形式', '增程式', '零百加速', '5.8s'),
+        JSON_ARRAY(
+            'https://example.com/l7-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        6,
+        '极氪 001',
+        '极氪',
+        712,
+        '三元锂',
+        299000.00,
+        5,
+        '2021-10-01',
+        36,
+        'L2+',
+        '极氪001是一款中大型纯电轿车',
+        JSON_OBJECT(
+            '驱动形式',
+            '双电机四驱',
+            '零百加速',
+            '3.8s'
+        ),
+        JSON_ARRAY(
+            'https://example.com/001-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        7,
+        '广汽埃安 AION S Plus',
+        '广汽埃安',
+        602,
+        '磷酸铁锂',
+        149800.00,
+        15,
+        '2022-06-01',
+        35,
+        'L2',
+        '广汽埃安AION S Plus是一款紧凑型纯电轿车',
+        JSON_OBJECT('驱动形式', '前驱', '零百加速', '7.6s'),
+        JSON_ARRAY(
+            'https://example.com/aions-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        8,
+        '长安深蓝 SL03',
+        '长安深蓝',
+        705,
+        '磷酸铁锂',
+        171900.00,
+        7,
+        '2022-07-01',
+        38,
+        'L2',
+        '长安深蓝SL03是一款中型纯电轿车',
+        JSON_OBJECT('驱动形式', '后驱', '零百加速', '5.9s'),
+        JSON_ARRAY(
+            'https://example.com/sl03-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        9,
+        '华为问界 M5',
+        '华为',
+        1100,
+        '三元锂',
+        249800.00,
+        8,
+        '2022-12-01',
+        45,
+        'L2+',
+        '华为问界M5是一款中型SUV',
+        JSON_OBJECT('驱动形式', '增程式', '零百加速', '4.4s'),
+        JSON_ARRAY(
+            'https://example.com/m5-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        10,
+        '哪吒 U Pro',
+        '哪吒',
+        610,
+        '三元锂',
+        129800.00,
+        12,
+        '2021-04-01',
+        35,
+        'L2',
+        '哪吒U Pro是一款紧凑型SUV',
+        JSON_OBJECT('驱动形式', '前驱', '零百加速', '7.9s'),
+        JSON_ARRAY(
+            'https://example.com/u-pro-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        11,
+        '大众 ID.4 CROZZ',
+        '大众',
+        550,
+        '三元锂',
+        199900.00,
+        5,
+        '2021-03-01',
+        40,
+        'L2',
+        '大众ID.4 CROZZ是一款紧凑型SUV',
+        JSON_OBJECT('驱动形式', '后驱', '零百加速', '8.2s'),
+        JSON_ARRAY(
+            'https://example.com/id4-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        12,
+        '比亚迪 汉 EV',
+        '比亚迪',
+        715,
+        '磷酸铁锂',
+        219800.00,
+        6,
+        '2020-07-01',
+        30,
+        'L2',
+        '比亚迪汉EV是一款中大型纯电轿车',
+        JSON_OBJECT('驱动形式', '四驱', '零百加速', '3.9s'),
+        JSON_ARRAY(
+            'https://example.com/han-1.jpg'
+        ),
+        NOW(),
+        NOW(),
+        0
     );
 
 UNLOCK TABLES;
@@ -481,93 +666,288 @@ CREATE TABLE `inventory_subscription` (
 -- -------------------------------------------------------
 
 DROP TABLE IF EXISTS `role`;
+
 CREATE TABLE `role` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) DEFAULT NULL,
-  `detail` varchar(250) DEFAULT NULL,
-  `is_deleted` tinyint(1) DEFAULT '0',
-  `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
-  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='角色表';
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `name` varchar(20) DEFAULT NULL,
+    `detail` varchar(250) DEFAULT NULL,
+    `is_deleted` tinyint(1) DEFAULT '0',
+    `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
+    `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 COMMENT = '角色表';
 
 LOCK TABLES `role` WRITE;
-INSERT INTO `role` VALUES
-(1,'学生','学生用户',0,NOW(),NOW()),
-(2,'中心管理员','中心管理员',0,NOW(),NOW()),
-(3,'初访员','初访员',0,NOW(),NOW()),
-(4,'心理助理','心理助理',0,NOW(),NOW()),
-(5,'咨询员','咨询员',0,NOW(),NOW());
+
+INSERT INTO
+    `role`
+VALUES (
+        1,
+        '学生',
+        '学生用户',
+        0,
+        NOW(),
+        NOW()
+    ),
+    (
+        2,
+        '中心管理员',
+        '中心管理员',
+        0,
+        NOW(),
+        NOW()
+    ),
+    (
+        3,
+        '初访员',
+        '初访员',
+        0,
+        NOW(),
+        NOW()
+    ),
+    (
+        4,
+        '心理助理',
+        '心理助理',
+        0,
+        NOW(),
+        NOW()
+    ),
+    (
+        5,
+        '咨询员',
+        '咨询员',
+        0,
+        NOW(),
+        NOW()
+    );
+
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `user`;
+
 CREATE TABLE `user` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `loginName` varchar(50) DEFAULT NULL,
-  `password` varchar(50) DEFAULT NULL,
-  `name` varchar(30) DEFAULT NULL,
-  `sex` varchar(10) DEFAULT NULL,
-  `birth` date DEFAULT NULL,
-  `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
-  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_deleted` tinyint(1) DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='登录用户表';
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `loginName` varchar(50) DEFAULT NULL,
+    `password` varchar(50) DEFAULT NULL,
+    `name` varchar(30) DEFAULT NULL,
+    `sex` varchar(10) DEFAULT NULL,
+    `birth` date DEFAULT NULL,
+    `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
+    `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `is_deleted` tinyint(1) DEFAULT '0',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 COMMENT = '登录用户表';
 
 LOCK TABLES `user` WRITE;
-INSERT INTO `user` VALUES
-(1,'20240111','123456','黄俊凯','男','2003-04-11',NOW(),NOW(),0),
-(2,'20240112','123456','牟展宏','男','2002-11-06',NOW(),NOW(),0),
-(3,'20240113','123456','宋天鹏','男','2000-01-01',NOW(),NOW(),0),
-(4,'20240114','123456','谢志成','男','2000-01-01',NOW(),NOW(),0),
-(5,'20230101','123456','金莉','女','2000-01-01',NOW(),NOW(),0),
-(6,'20230102','123456','路璐','女','2000-01-01',NOW(),NOW(),0),
-(7,'20230103','123456','祝继华','男','2000-01-01',NOW(),NOW(),0),
-(8,'20230104','123456','杜小智','男','2000-01-01',NOW(),NOW(),0),
-(9,'20230105','123456','宋永红','女','2000-01-01',NOW(),NOW(),0),
-(10,'20230106','123456','白秀秀','女','2000-01-01',NOW(),NOW(),0),
-(11,'20230107','123456','原盛','男','2000-01-01',NOW(),NOW(),0),
-(12,'20230108','123456','饶元','男','2000-01-01',NOW(),NOW(),0),
-(13,'20230109','123456','张斌','男','2000-01-01',NOW(),NOW(),0),
-(14,'admin','123456','管理员','男','2000-01-01',NOW(),NOW(),0);
+
+INSERT INTO
+    `user`
+VALUES (
+        1,
+        '20240111',
+        '123456',
+        '黄俊凯',
+        '男',
+        '2003-04-11',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        2,
+        '20240112',
+        '123456',
+        '牟展宏',
+        '男',
+        '2002-11-06',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        3,
+        '20240113',
+        '123456',
+        '宋天鹏',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        4,
+        '20240114',
+        '123456',
+        '谢志成',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        5,
+        '20230101',
+        '123456',
+        '金莉',
+        '女',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        6,
+        '20230102',
+        '123456',
+        '路璐',
+        '女',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        7,
+        '20230103',
+        '123456',
+        '祝继华',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        8,
+        '20230104',
+        '123456',
+        '杜小智',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        9,
+        '20230105',
+        '123456',
+        '宋永红',
+        '女',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        10,
+        '20230106',
+        '123456',
+        '白秀秀',
+        '女',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        11,
+        '20230107',
+        '123456',
+        '原盛',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        12,
+        '20230108',
+        '123456',
+        '饶元',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        13,
+        '20230109',
+        '123456',
+        '张斌',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    ),
+    (
+        14,
+        'admin',
+        '123456',
+        '管理员',
+        '男',
+        '2000-01-01',
+        NOW(),
+        NOW(),
+        0
+    );
+
 UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `user_role`;
+
 CREATE TABLE `user_role` (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `uid` bigint NOT NULL,
-  `rid` bigint NOT NULL,
-  `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
-  `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_deleted` tinyint(1) DEFAULT '0',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='用户-角色关联表';
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `uid` bigint NOT NULL,
+    `rid` bigint NOT NULL,
+    `create_date` datetime DEFAULT CURRENT_TIMESTAMP,
+    `update_date` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `is_deleted` tinyint(1) DEFAULT '0',
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb3 COMMENT = '用户-角色关联表';
 
 LOCK TABLES `user_role` WRITE;
-INSERT INTO `user_role` VALUES
-(1,1,1,NOW(),NOW(),0),
-(2,2,1,NOW(),NOW(),0),
-(3,3,1,NOW(),NOW(),0),
-(4,4,1,NOW(),NOW(),0),
-(5,5,2,NOW(),NOW(),0),
-(6,6,2,NOW(),NOW(),0),
-(7,7,3,NOW(),NOW(),0),
-(8,8,3,NOW(),NOW(),0),
-(9,9,3,NOW(),NOW(),0),
-(10,10,4,NOW(),NOW(),0),
-(11,11,5,NOW(),NOW(),0),
-(12,12,5,NOW(),NOW(),0),
-(13,13,5,NOW(),NOW(),0),
-(14,14,2,NOW(),NOW(),0);
+
+INSERT INTO
+    `user_role`
+VALUES (1, 1, 1, NOW(), NOW(), 0),
+    (2, 2, 1, NOW(), NOW(), 0),
+    (3, 3, 1, NOW(), NOW(), 0),
+    (4, 4, 1, NOW(), NOW(), 0),
+    (5, 5, 2, NOW(), NOW(), 0),
+    (6, 6, 2, NOW(), NOW(), 0),
+    (7, 7, 3, NOW(), NOW(), 0),
+    (8, 8, 3, NOW(), NOW(), 0),
+    (9, 9, 3, NOW(), NOW(), 0),
+    (10, 10, 4, NOW(), NOW(), 0),
+    (11, 11, 5, NOW(), NOW(), 0),
+    (12, 12, 5, NOW(), NOW(), 0),
+    (13, 13, 5, NOW(), NOW(), 0),
+    (14, 14, 2, NOW(), NOW(), 0);
+
 UNLOCK TABLES;
 
-/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */
+;
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */
+;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */
+;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */
+;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */
+;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */
+;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */
+;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */
+;
 
 -- Dump completed
