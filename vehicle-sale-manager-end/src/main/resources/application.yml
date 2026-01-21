@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/mental?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull
+    username: root
+    password: 123456
+  mvc:
+    format:
+      date: yyyy-MM-dd
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  web:
+    resources:
+      static-locations: classpath:/META-INF/resources/, classpath:/resources/, classpath:/static/, classpath:/public/, file:${file-upload-path}
+  mail:
+    host: smtp.qq.com
+    protocol: smtp
+    port: 587
+    default-encoding: UTF-8
+    username: 1735924974@qq.com
+    password: pomvyulcipyybief
+    test-connection: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+server:
+  servlet:
+    encoding:
+      charset: utf-8
+  port: 8888
+
+mybatis:
+  mapper-locations: classpath:/mybatis/mapper/*.xml, classpath:/mybatis/mapper/extend/*.xml
+
+logging:
+  level:
+    com.example.mybatisplus.mapper: debug
+file-upload-path: ./file
+
+

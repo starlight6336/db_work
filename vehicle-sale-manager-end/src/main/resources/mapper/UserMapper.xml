@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.mybatisplus.mapper.UserMapper">
+
+    <!-- 通用查询映射结果 -->
+    <resultMap id="BaseResultMap" type="com.example.mybatisplus.model.domain.User">
+        <id column="id" property="id" />
+        <result column="loginName" property="loginName" />
+        <result column="password" property="password" />
+        <result column="name" property="name" />
+        <result column="sex" property="sex" />
+        <result column="birth" property="birth" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+        <result column="is_deleted" property="deleted" />
+    </resultMap>
+    <!-- 心理咨询 FirstVisit 相关 resultMap 已移除 -->
+
+    <resultMap id="UserVOResultMap" type="com.example.mybatisplus.model.vo.UserVO">
+        <id column="id" property="id" />
+        <result column="loginName" property="loginName" />
+        <result column="password" property="password" />
+        <result column="name" property="name" />
+        <result column="sex" property="sex" />
+        <result column="birth" property="birth" />
+        <result column="create_date" property="createDate" />
+        <result column="update_date" property="updateDate" />
+        <result column="is_deleted" property="deleted" />
+        <!-- teacherInfo 关联原用于心理咨询师信息，已在实体中移除，这里一并去掉 -->
+        <association property="role" javaType="com.example.mybatisplus.model.domain.Role" >
+            <id column="role_id" property="id" />
+            <result column="role_name" property="name" />
+            <result column="role_detail" property="detail" />
+            <result column="is_deleted" property="deleted" />
+            <result column="create_date" property="createDate" />
+            <result column="update_date" property="updateDate" />
+        </association>
+    </resultMap>
+
+    <!-- 心理咨询师详情 CounselorDetailVO 的 resultMap 已移除 -->
+
+    <select id="selectAllUserVO" resultMap="UserVOResultMap">
+        select * from user u join user_role ur on u.id = ur.uid join role r on ur.rid = r.id;
+    </select>
+
+    <select id="selectOneUserVO" resultMap="UserVOResultMap">
+        select *,r.id as role_id,r.name as role_name,r.detail as role_detail from user u left join user_role ur on u.id = ur.uid join role r on ur.rid = r.id
+        where u.loginName = #{user.loginName} AND u.password = #{user.password};
+    </select>
+
+    <select id="selectByParm" resultMap="UserVOResultMap">
+        select * from user u left join user_role ur on u.id = ur.uid left join role r on ur.rid = r.id
+        where 1=1
+        <if test="user.name != null">
+            AND u.name like #{user.name}
+        </if>
+        <if test="user.sex != null">
+            AND sex like #{user.sex}
+        </if>
+
+    </select>
+    <!-- 心理咨询师列表查询 selectTeacherListByParm 已移除 -->
+
+
+    <!-- 心理咨询相关 FreeTeacher / selectFreeTeachers / selectConsultTeachers / getMyAppointment / getAllCounselor 全部移除 -->
+</mapper>
