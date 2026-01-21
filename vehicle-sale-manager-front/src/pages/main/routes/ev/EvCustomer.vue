@@ -420,7 +420,7 @@ export default {
                 '极氪 极氪 007': 'https://th.bing.com/th/id/R.810ab0d5062f410fe4f438192e8610b3?rik=f0YjhuD2KWzCPA&riu=http%3a%2f%2fimg.pcauto.com.cn%2fimages%2fupload%2fupc%2ftx%2fauto5%2f2408%2f14%2fc19%2f438941014_1723612363706.jpg&ehk=C05JItbpSCsUDJgwnmyBWsNiSapCv%2bViuXxjGl2Vf4o%3d&risl=&pid=ImgRaw&r=0',
                 '广汽埃安 广汽埃安 AION S Plus': 'https://tse2.mm.bing.net/th/id/OIP.WXaHP3I0Bda9MEs0pNCknwHaFj?rs=1&pid=ImgDetMain&o=7&rm=3',
                 '长安深蓝 长安深蓝 SL03': 'https://tse2.mm.bing.net/th/id/OIF.Toei0lYAipKPj6aE24xD7g?rs=1&pid=ImgDetMain&o=7&rm=3',
-                '华为 华为 问界 M5': 'https://img1.bitauto.com/appimage-800-w1/mapi/media/2022/09/08/ffba353e7bd7467da81cd10059abd866.jpeg',
+                '华为 华为 问界 M5': 'https://www.car-metaverse.com/wp-content/uploads/2022/03/2022031808241515.png',
                 '哪吒 哪吒 U Pro': 'https://th.bing.com/th/id/R.b2bac3be201bbf299db478d521a87c4a?rik=WcQH95ErdcyU4A&riu=http%3a%2f%2fs3.xchuxing.com%2fxchuxing%2farticle%2f2021%2f03%2f21%2f0544d202103211046143169.png&ehk=m0qlhr4hnK6Wjx6KlZAfwZCyjkkYA5tlSN2Hy0ek6DM%3d&risl=&pid=ImgRaw&r=0',
                 '大众 大众 ID.4 CROZZ': 'https://tse4.mm.bing.net/th/id/OIP.XzFxUk0-0dFl85Po5vwdSwHaE8?rs=1&pid=ImgDetMain&o=7&rm=3',
                 '比亚迪 比亚迪 汉 EV': 'https://tse2.mm.bing.net/th/id/OIP.fclJ-4yk6kMLfIZNSyZLzAHaEW?rs=1&pid=ImgDetMain&o=7&rm=3'
